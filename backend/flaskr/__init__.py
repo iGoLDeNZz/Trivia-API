@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
-from models import setup_db, Question, Category
+from models import setup_db, Question, Category, db
 
 QUESTIONS_PER_PAGE = 100
 
@@ -32,11 +32,11 @@ def create_app(test_config=None):
 
   
 
-  @app.route('/')
-  def index():
-    return jsonify({
-      'message': 'Hello World!'
-    })
+  # @app.route('/')
+  # def index():
+  #   return jsonify({
+  #     'message': 'Hello World!'
+  #   })
 
  
 
@@ -99,8 +99,7 @@ def create_app(test_config=None):
         'categories': formated_categories,
         'current_category': None
         
-      })
-    
+      })    
     elif request.method == 'POST':
       # add a new question
       return ''
@@ -109,7 +108,7 @@ def create_app(test_config=None):
   
 
   '''
-  @TODO: 
+  @TODO (Done): 
   Create an endpoint to DELETE question using a question ID. 
 
   TEST: When you click the trash icon next to a question, the question will be removed.
@@ -125,12 +124,14 @@ def create_app(test_config=None):
       db.session.delete(question)
     
     except:
+      # Handle question does not exist
+      
       return "There was an error"
 
     finally:
       db.session.commit()
     
-    return "deleted"
+    return jsonify(question.format())
 
 
   '''
