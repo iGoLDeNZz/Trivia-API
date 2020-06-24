@@ -87,6 +87,10 @@ def create_app(test_config=None):
     formated_questions = [question.format() for question in questions]
     sublist = paged_list(formated_questions, page)
 
+    # There are no questions to return
+    if len(sublist) == 0:
+      abort(404)
+
     categories = Category.query.all()
     formated_categories = [category.format() for category in categories]
 
@@ -96,7 +100,6 @@ def create_app(test_config=None):
       'total_questions': len(Question.query.all()),
       'categories': formated_categories,
       'current_category': None
-      
     })    
 
   '''
@@ -121,29 +124,35 @@ def create_app(test_config=None):
   @app.route('/questions', methods=['POST'])
   def add_new_question():
 
-    question = request.form.get('question')
-    answer = request.form.get('answer')
-    difficulty = request.form.get('difficulty')
-    category = request.form.get('category')
+    question = request.form.get('question', None)
+    answer = request.form.get('answer', None)
+    difficulty = request.form.get('difficulty', None)
+    category = request.form.get('category', None)
     search_term = request.form.get('searchTerm', None)
 
     if search_term is None: # We should try to add question
 
-      if question is not None and answer is not None and difficulty is not None and category is not None:
+      if question is None:
+        abort(400, {'message': 'The question cannot be empty.'})
+
+      if answer is None:
+        abort(400, {'message': 'The answer cannot be empty.'})
+
+      if difficulty is None:
+        abort(400, {'message': 'The difficulty cannot be empty.'})
+
+      if category is None:
+        abort(400, {'message': 'The category cannot be empty.'})
+
         
         try:
           question = Question(question, answer, category, difficulty)
           db.session.add(question)
         except:
-          # (error): database error occured
-          return "database error occured"
-
+          abort(422)
         finally:
           db.session.commit()
           return jsonify(question.format())
-      else:
-        # (error): input error
-        return
 
     else:
       # find the questions that has the search term in them 
@@ -153,6 +162,9 @@ def create_app(test_config=None):
       formated_questions = [question.format() for question in questions]
       sublist = paged_list(formated_questions, 1)
       
+      if len(sublist) == 0:
+        abort(404, {'message': 'Sorry, no question contains what you have searched for.'})
+
       return jsonify({
         'success': True,
         'questions': sublist,
@@ -174,22 +186,21 @@ def create_app(test_config=None):
   def delete_question(question_id):
     
     question = Question.query.get(question_id)
+    print(f'\n\nThe question is: {question}\n\n')
+
+    if question is None:
+      abort(404)
 
     try:
       db.session.delete(question)
     
     except:
-      # Handle question does not exist
-      
-      return "There was an error"
-
+      abort(422)
     finally:
       db.session.commit()
     
     return jsonify(question.format())
 
-
-  
 
   '''
   @TODO (Done): 
@@ -205,6 +216,9 @@ def create_app(test_config=None):
     questions = Question.query.filter(Question.category==category_id).all()
     formated_questions = [question.format() for question in questions]
     sublist = paged_list(formated_questions, 1)
+
+    if len(sublist) == 0:
+      abort(404)
 
     return jsonify({
       'success': True,
@@ -229,21 +243,20 @@ def create_app(test_config=None):
   @app.route('/quizzes', methods=['POST'])
   def create_quiz():
 
-    previous_questions = request.form.getlist('previous_questions')
+    previous_questions = request.form.getlist('previous_questions', None)
     quiz_category = request.form.get('quiz_category', None)
 
     print(quiz_category)
     all_questions = []
-    if quiz_category is not None:
+    if quiz_category is not None and quiz_category != "":
       all_questions = Question.query.filter(Question.category==quiz_category).all()
-      
     else:
       all_questions = Question.query.all()
 
     new_questions = [question.format() for question in all_questions if question not in previous_questions]
     
     new_question = None
-    if len(new_questions) > 0: # choose only if there is a new question
+    if len(new_questions) > 0: # choose only if there is a new question. No need to abort.
       new_question = random.choice(new_questions)
 
     return jsonify(new_question)
@@ -254,17 +267,23 @@ def create_app(test_config=None):
 
 
   '''
-  @TODO: 
+  @TODO : 
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
+  def getCustomErrorMessage(error, fallback_message):
+    try:
+      return error.description["message"] # custom error message
+    except TypeError:
+      return fallback_message # fallback to default
+
 
   @app.errorhandler(400)
   def bad_request(error):
     return jsonify({
       "success": False, 
       "error": 400,
-      "message": getErrorMessage(error, "bad request")
+      "message": getCustomErrorMessage(error, "bad request")
       }), 400
 
   @app.errorhandler(404)
@@ -272,7 +291,7 @@ def create_app(test_config=None):
     return jsonify({
       "success": False, 
       "error": 404,
-      "message": getErrorMessage(error, "resource not found")
+      "message": getCustomErrorMessage(error, "resource not found")
       }), 404
 
   @app.errorhandler(405)
@@ -280,7 +299,7 @@ def create_app(test_config=None):
     return jsonify({
       "success": False, 
       "error": 405,
-      "message": "method not allowed"
+      "message": getCustomErrorMessage(error, "method not allowed")
       }), 405
 
   @app.errorhandler(422)
@@ -288,7 +307,7 @@ def create_app(test_config=None):
     return jsonify({
       "success": False, 
       "error": 422,
-      "message": getErrorMessage(error, "unprocessable")
+      "message": getCustomErrorMessage(error, "unprocessable")
       }), 422
   
   return app
