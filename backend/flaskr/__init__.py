@@ -89,7 +89,7 @@ def create_app(test_config=None):
 
     # There are no questions to return
     if len(sublist) == 0:
-      abort(404)
+      abort(404, {'message': 'Page not found'})
 
     categories = Category.query.all()
     formated_categories = [category.format() for category in categories]
@@ -145,14 +145,17 @@ def create_app(test_config=None):
         abort(400, {'message': 'The category cannot be empty.'})
 
         
-        try:
-          question = Question(question, answer, category, difficulty)
-          db.session.add(question)
-        except:
-          abort(422)
-        finally:
-          db.session.commit()
-          return jsonify(question.format())
+      try:
+        question = Question(question, answer, category, difficulty)
+        db.session.add(question)
+      except:
+        abort(422)
+      finally:
+        db.session.commit()
+        
+      response = question.format()
+      response['success'] = True
+      return jsonify(response)
 
     else:
       # find the questions that has the search term in them 
@@ -186,7 +189,6 @@ def create_app(test_config=None):
   def delete_question(question_id):
     
     question = Question.query.get(question_id)
-    print(f'\n\nThe question is: {question}\n\n')
 
     if question is None:
       abort(404)
@@ -199,7 +201,10 @@ def create_app(test_config=None):
     finally:
       db.session.commit()
     
-    return jsonify(question.format())
+    response = question.format()
+    response['success'] = True
+
+    return jsonify(response)
 
 
   '''
@@ -213,12 +218,23 @@ def create_app(test_config=None):
   @app.route('/categories/<category_id>/questions', methods=['GET'])
   def all_questions_for_category(category_id):
 
+
+
+    # is the category does not exist in the database raise an error
+    category = Category.query.get(category_id)
+    if category is None:
+      abort(404)
+
     questions = Question.query.filter(Question.category==category_id).all()
     formated_questions = [question.format() for question in questions]
     sublist = paged_list(formated_questions, 1)
-
-    if len(sublist) == 0:
-      abort(404)
+    
+    '''
+    You can abort if you think this is a proper design.
+    but I think having no questions for a category that is present in the database is not an error.
+    # if len(sublist) == 0:
+    #   abort(404)
+    '''
 
     return jsonify({
       'success': True,
@@ -259,7 +275,10 @@ def create_app(test_config=None):
     if len(new_questions) > 0: # choose only if there is a new question. No need to abort.
       new_question = random.choice(new_questions)
 
-    return jsonify(new_question)
+    response = new_question
+    response['success'] = True
+
+    return jsonify(response)
 
   # ------------------ 
   # MARK: Error handlers
