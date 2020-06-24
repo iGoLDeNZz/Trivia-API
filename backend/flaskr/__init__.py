@@ -262,7 +262,6 @@ def create_app(test_config=None):
     previous_questions = request.form.getlist('previous_questions', None)
     quiz_category = request.form.get('quiz_category', None)
 
-    print(quiz_category)
     all_questions = []
     if quiz_category is not None and quiz_category != "":
       all_questions = Question.query.filter(Question.category==quiz_category).all()
@@ -286,7 +285,7 @@ def create_app(test_config=None):
 
 
   '''
-  @TODO : 
+  @TODO (Done): 
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
