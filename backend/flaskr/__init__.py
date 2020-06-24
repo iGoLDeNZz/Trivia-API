@@ -215,7 +215,7 @@ def create_app(test_config=None):
 
 
   '''
-  @TODO: 
+  @TODO (Done): 
   Create a POST endpoint to get questions to play the quiz. 
   This endpoint should take category and previous question parameters 
   and return a random questions within the given category, 
@@ -248,11 +248,48 @@ def create_app(test_config=None):
 
     return jsonify(new_question)
 
+  # ------------------ 
+  # MARK: Error handlers
+  # ------------------ 
+
+
   '''
   @TODO: 
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
+
+  @app.errorhandler(400)
+  def bad_request(error):
+    return jsonify({
+      "success": False, 
+      "error": 400,
+      "message": getErrorMessage(error, "bad request")
+      }), 400
+
+  @app.errorhandler(404)
+  def ressource_not_found(error):
+    return jsonify({
+      "success": False, 
+      "error": 404,
+      "message": getErrorMessage(error, "resource not found")
+      }), 404
+
+  @app.errorhandler(405)
+  def method_not_allowed(error):
+    return jsonify({
+      "success": False, 
+      "error": 405,
+      "message": "method not allowed"
+      }), 405
+
+  @app.errorhandler(422)
+  def unprocessable(error):
+    return jsonify({
+      "success": False, 
+      "error": 422,
+      "message": getErrorMessage(error, "unprocessable")
+      }), 422
   
   return app
 
