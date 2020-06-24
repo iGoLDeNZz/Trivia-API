@@ -1,4 +1,4 @@
-database_setup = {
+database_info = {
     "database_name_production" : "trivia",
     "database_name_test" : "trivia_test",
     "user_name" : "postgres", # default postgres user name
