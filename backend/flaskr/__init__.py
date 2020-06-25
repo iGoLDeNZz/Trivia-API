@@ -54,7 +54,7 @@ def create_app(test_config=None):
   for all available categories.
   '''
 
-  @app.route('/categories')
+  @app.route('/categories', methods=['GET'])
   def get_all_categories():
     categories = Category.query.order_by(Category.id).all()
     formated_categories = [category.format() for category in categories]
